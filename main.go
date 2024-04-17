@@ -1,6 +1,7 @@
 package main
 
 import (
+	"app/blog"
 	"app/database"
 
 	"github.com/labstack/echo/v4"
@@ -8,11 +9,11 @@ import (
 
 func main() {
 	database.DatabaseInit()
-	// gorm := database.DB()
-	// gorm.AutoMigrate(&blog.Blog{})
+	gorm := database.DB()
+	gorm.AutoMigrate(&blog.Blog{})
 
 	e := echo.New()
-	// blog.BlogRoutes(e)
+	blog.BlogRoutes(e)
 
 	e.Logger.Fatal(e.Start(":8080"))
 }
