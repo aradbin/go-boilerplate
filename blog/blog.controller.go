@@ -12,16 +12,12 @@ func Create(c echo.Context) error {
 	item := new(Blog)
 
 	if err := c.Bind(item); err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
-			"message": err.Error(),
-		})
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request data")
 	}
 
 	result := db.Create(&item)
 	if result.Error != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
-			"message": result.Error.Error(),
-		})
+		return echo.NewHTTPError(http.StatusInternalServerError, "Something went wrong. Please try again")
 	}
 
 	return c.JSON(http.StatusCreated, item)
@@ -32,10 +28,9 @@ func GetAll(c echo.Context) error {
 	var items []Blog
 
 	query, total := database.Query(c, db, &items)
-	if err := query.Find(&items).Error; err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
-			"message": err.Error(),
-		})
+	result := query.Find(&items)
+	if result.Error != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Something went wrong. Please try again")
 	}
 
 	return c.JSON(http.StatusOK, map[string]interface{}{
@@ -45,74 +40,51 @@ func GetAll(c echo.Context) error {
 }
 
 func GetOne(c echo.Context) error {
-	db := database.DB()
-	id := c.Param("id")
 	var item Blog
 
-	result := db.Where("id = ?", id).First(&item)
-	if result.Error != nil {
-		if result.RowsAffected == 0 {
-			return c.JSON(http.StatusNotFound, map[string]interface{}{
-				"message": "Item not found",
-			})
-		}
-		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
-			"message": result.Error.Error(),
-		})
+	hasItem, error := database.FindByID(c.Param("id"), &item)
+	if error != nil {
+		return error
 	}
 
-	return c.JSON(http.StatusOK, item)
+	return c.JSON(http.StatusOK, hasItem)
 }
 
 func Update(c echo.Context) error {
 	db := database.DB()
-	id := c.Param("id")
 	var item Blog
 
-	result := db.Where("id = ?", id).First(&item)
-	if result.Error != nil {
-		if result.RowsAffected == 0 {
-			return c.JSON(http.StatusNotFound, map[string]interface{}{
-				"message": "Item not found",
-			})
-		}
-		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
-			"message": result.Error.Error(),
-		})
+	hasItem, error := database.FindByID(c.Param("id"), &item)
+	if error != nil && hasItem == nil {
+		return error
 	}
 
 	updatedItem := new(Blog)
 	if err := c.Bind(updatedItem); err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
-			"message": err.Error(),
-		})
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request data")
 	}
 
-	result = db.Model(&item).Updates(updatedItem)
+	result := db.Model(hasItem.(*Blog)).Updates(updatedItem)
 	if result.Error != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
-			"message": result.Error.Error(),
-		})
+		return echo.NewHTTPError(http.StatusInternalServerError, "Something went wrong. Please try again")
 	}
 
-	return c.JSON(http.StatusOK, item)
+	return c.JSON(http.StatusOK, hasItem)
 }
 
 func Delete(c echo.Context) error {
 	db := database.DB()
-	id := c.Param("id")
+	var item Blog
 
-	result := db.Where("id = ?", id).Delete(&Blog{})
-	if result.Error != nil {
-		if result.RowsAffected == 0 {
-			return c.JSON(http.StatusNotFound, map[string]interface{}{
-				"message": "Item not found",
-			})
-		}
-		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
-			"message": result.Error.Error(),
-		})
+	hasItem, error := database.FindByID(c.Param("id"), &item)
+	if error != nil && hasItem == nil {
+		return error
 	}
 
-	return c.JSON(http.StatusNoContent, nil)
+	result := db.Model(hasItem.(*Blog)).Delete(&Blog{})
+	if result.Error != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Something went wrong. Please try again")
+	}
+
+	return c.JSON(http.StatusOK, result.RowsAffected)
 }

@@ -2,6 +2,7 @@ package database
 
 import (
 	"fmt"
+	"net/http"
 	"strconv"
 
 	"github.com/labstack/echo/v4"
@@ -29,6 +30,20 @@ func DatabaseInit() {
 
 func DB() *gorm.DB {
 	return database
+}
+
+func FindByID(id, model interface{}) (interface{}, error) {
+	db := DB()
+
+	result := db.Where("id = ?", id).First(model)
+	if result.Error != nil {
+		if result.RowsAffected == 0 {
+			return nil, echo.NewHTTPError(http.StatusNotFound, "Item not found")
+		}
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Something went wrong. Please try again")
+	}
+
+	return model, nil
 }
 
 func Query(c echo.Context, db *gorm.DB, model interface{}) (*gorm.DB, int64) {
