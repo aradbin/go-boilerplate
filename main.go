@@ -1,11 +1,13 @@
 package main
 
 import (
+	"app/database"
+
 	"github.com/labstack/echo/v4"
 )
 
 func main() {
-	// database.DatabaseInit()
+	database.DatabaseInit()
 	// gorm := database.DB()
 	// gorm.AutoMigrate(&blog.Blog{})
 
