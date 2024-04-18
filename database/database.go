@@ -47,10 +47,10 @@ func FindByID(id, model interface{}) (interface{}, error) {
 }
 
 func Query(c echo.Context, db *gorm.DB, model interface{}) (*gorm.DB, int64) {
-	db = Sort(c, db).Model(model)
+	db = Sort(c, db)
 
 	var total int64
-	db.Count(&total)
+	db.Model(model).Count(&total)
 
 	db = Paginate(c, db)
 
