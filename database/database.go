@@ -35,7 +35,7 @@ func DB() *gorm.DB {
 func FindByField(field string, value interface{}, model interface{}) (interface{}, error) {
 	db := DB()
 
-	result := db.Where(field+" = ?", value).First(&model)
+	result := db.Where(field+" = ?", value).First(model)
 	if result.Error != nil {
 		if result.RowsAffected == 0 {
 			return nil, echo.NewHTTPError(http.StatusNotFound, "Item not found")
