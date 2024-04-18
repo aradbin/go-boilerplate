@@ -42,7 +42,7 @@ func GetAll(c echo.Context) error {
 func GetOne(c echo.Context) error {
 	var item Blog
 
-	hasItem, error := database.FindByID(c.Param("id"), &item)
+	hasItem, error := database.FindByField("id", c.Param("id"), &item)
 	if error != nil {
 		return error
 	}
@@ -53,15 +53,15 @@ func GetOne(c echo.Context) error {
 func Update(c echo.Context) error {
 	db := database.DB()
 	var item Blog
-
-	hasItem, error := database.FindByID(c.Param("id"), &item)
-	if error != nil && hasItem == nil {
-		return error
-	}
-
 	updatedItem := new(Blog)
+
 	if err := c.Bind(updatedItem); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request data")
+	}
+
+	hasItem, error := database.FindByField("id", c.Param("id"), &item)
+	if error != nil && hasItem == nil {
+		return error
 	}
 
 	result := db.Model(hasItem.(*Blog)).Updates(updatedItem)
@@ -76,7 +76,7 @@ func Delete(c echo.Context) error {
 	db := database.DB()
 	var item Blog
 
-	hasItem, error := database.FindByID(c.Param("id"), &item)
+	hasItem, error := database.FindByField("id", c.Param("id"), &item)
 	if error != nil && hasItem == nil {
 		return error
 	}

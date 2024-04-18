@@ -32,10 +32,10 @@ func DB() *gorm.DB {
 	return database
 }
 
-func FindByID(id, model interface{}) (interface{}, error) {
+func FindByField(field string, value interface{}, model interface{}) (interface{}, error) {
 	db := DB()
 
-	result := db.Where("id = ?", id).First(model)
+	result := db.Where(field+" = ?", value).First(&model)
 	if result.Error != nil {
 		if result.RowsAffected == 0 {
 			return nil, echo.NewHTTPError(http.StatusNotFound, "Item not found")
