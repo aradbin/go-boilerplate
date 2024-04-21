@@ -15,12 +15,40 @@ func Register(c echo.Context) error {
 }
 
 func Login(c echo.Context) error {
+	newItem := new(user.User)
 	var item user.User
+	var hasItem interface{}
+	var error error
 
-	hasItem, error := database.FindByField("email", c.Param("id"), &item)
-	if error != nil {
-		return error
+	if err := c.Bind(newItem); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request data")
 	}
 
-	return c.JSON(http.StatusOK, hasItem)
+	if newItem.Username != "" {
+		hasItem, error = database.FindByField("username", newItem.Username, &item)
+		if error != nil {
+			return echo.NewHTTPError(http.StatusNotFound, "User not registered. Please register")
+		}
+	} else {
+		hasItem, error = database.FindByField("email", newItem.Email, &item)
+		if error != nil {
+			return echo.NewHTTPError(http.StatusNotFound, "User not registered. Please register")
+		}
+	}
+
+	hasUser := hasItem.(*user.User)
+
+	if !user.CheckPasswordHash(newItem.Password, []byte(hasUser.Password)) {
+		return echo.NewHTTPError(http.StatusUnauthorized, "Invalid username or password")
+	}
+
+	token, err := user.GenerateJWT(*hasUser)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Something went wrong. Please try again")
+	}
+
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"token": token,
+		"user":  hasUser,
+	})
 }
